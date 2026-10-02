@@ -2084,6 +2084,18 @@ class TestWifiSessionApi(
         serializer_dict = self._serialize_wifi_session(wifi_session)
         self.assertEqual(response.data, serializer_dict)
 
+    def test_wifi_session_hostname_ip_address(self):
+        wifi_session = self._create_wifi_session(
+            hostname="laptop", ip_address="192.168.1.10"
+        )
+        self._login_admin()
+        response = self.client.get(
+            reverse("monitoring:api_wifi_session_detail", args=[wifi_session.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["hostname"], "laptop")
+        self.assertEqual(response.data["ip_address"], "192.168.1.10")
+
     def test_wifisession_list_get(self):
         self._create_wifi_session_multi_env()
         self._login_admin()

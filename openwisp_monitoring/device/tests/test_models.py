@@ -1164,6 +1164,51 @@ class TestWifiClientSession(TestWifiClientSessionMixin, TestCase):
         self.assertNotEqual(wifi_client3_session.start_time, None)
         self.assertEqual(wifi_client3_session.stop_time, None)
 
+    def test_wifi_session_hostname_ip_address(self):
+        def lease(mac, ip, name):
+            return {
+                "expiry": 1586943200,
+                "mac": mac,
+                "ip": ip,
+                "client_name": name,
+                "client_id": "*",
+            }
+
+        device_data = self._create_device_data()
+        data = self._sample_data
+        data["dhcp_leases"] = [
+            lease("00:EE:AD:34:F5:3B", "fe80::1", "laptop"),
+            lease("00:ee:ad:34:f5:3b", "192.168.1.10", "*"),
+            lease("b0:e1:7e:30:16:44", "0.0.0.0", "*"),
+        ]
+        self._save_device_data(device_data, deepcopy(data))
+        session1 = WifiSession.objects.get(wifi_client="00:ee:ad:34:f5:3b")
+        session2 = WifiSession.objects.get(wifi_client="b0:e1:7e:30:16:44")
+        session3 = WifiSession.objects.get(wifi_client="c0:ee:fb:34:f5:4b")
+        self.assertEqual(session1.hostname, "laptop")
+        self.assertEqual(session1.ip_address, "192.168.1.10")
+        self.assertEqual(session2.hostname, "")
+        self.assertEqual(session2.ip_address, None)
+        self.assertEqual(session3.hostname, "")
+        self.assertEqual(session3.ip_address, None)
+
+        with self.subTest("Lease learned during an open session"):
+            data["dhcp_leases"].append(
+                lease("c0:ee:fb:34:f5:4b", "192.168.1.30", "phone")
+            )
+            self._save_device_data(device_data, deepcopy(data))
+            self.assertEqual(WifiSession.objects.count(), 3)
+            session3.refresh_from_db()
+            self.assertEqual(session3.hostname, "phone")
+            self.assertEqual(session3.ip_address, "192.168.1.30")
+
+        with self.subTest("Missing leases do not clear known values"):
+            data.pop("dhcp_leases")
+            self._save_device_data(device_data, deepcopy(data))
+            session1.refresh_from_db()
+            self.assertEqual(session1.hostname, "laptop")
+            self.assertEqual(session1.ip_address, "192.168.1.10")
+
     def test_updating_existing_wifi_sessions(self):
         device_data = self._create_device_data()
         self._save_device_data(device_data=device_data)

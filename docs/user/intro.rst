@@ -32,8 +32,8 @@ OpenWISP provides the following monitoring capabilities:
   :ref:`jitter <iperf3>`, :ref:`datagram <iperf3>`, :ref:`datagram loss
   <iperf3>`
 - Maintains a record of :doc:`WiFi sessions <wifi-sessions>` with clients'
-  MAC address and vendor, session start and stop time and connected device
-  along with other information
+  MAC address, vendor, hostname and IP address, session start and stop
+  time and connected device along with other information
 - Charts can be viewed at resolutions of the last 1 day, 3 days, 7 days,
   30 days, and 365 days
 - Configurable alerts

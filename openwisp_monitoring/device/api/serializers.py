@@ -167,6 +167,8 @@ class WifiSessionSerializer(serializers.ModelSerializer):
             "ssid",
             "interface_name",
             "client",
+            "hostname",
+            "ip_address",
             "start_time",
             "stop_time",
             "modified",

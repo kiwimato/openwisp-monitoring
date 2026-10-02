@@ -5,6 +5,15 @@ OpenWISP Monitoring maintains a record of WiFi sessions created by clients
 joined to a radio of managed devices. The WiFi sessions are created
 asynchronously from the monitoring data received from the device.
 
+When the monitoring data of the device includes DHCP leases, each session
+also shows the hostname and IP address of the client, matched by MAC
+address. Devices running a DHCP server report their own leases; access
+points which do not run a DHCP server can enable DHCP snooping in the
+`OpenWrt monitoring agent
+<https://github.com/openwisp/openwrt-openwisp-monitoring>`_ to report the
+hostname and IP address of their wireless clients. Both fields can be used
+to search sessions.
+
 You can filter both currently open sessions and past sessions by their
 *start* or *stop* time or *organization* or *group* of the device clients
 are connected to or even directly by a *device* name or ID.

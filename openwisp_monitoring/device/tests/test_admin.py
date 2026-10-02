@@ -1509,6 +1509,43 @@ class TestWifiSessionAdmin(
             html=True,
         )
 
+    def test_wifi_session_hostname_ip_address(self):
+        device = self._create_device()
+        self._create_wifi_session(
+            device=device, hostname="laptop", ip_address="192.168.1.10"
+        )
+        self._create_wifi_session(
+            device=device,
+            wifi_client=self._create_wifi_client(mac_address="22:33:44:55:66:88"),
+            hostname="phone",
+            ip_address="192.168.1.20",
+        )
+        url = reverse(
+            f"admin:{self.wifi_session_app_label}_{self.wifi_session_model_name}_changelist"
+        )
+
+        with self.subTest("Changelist columns"):
+            response = self.client.get(url)
+            self.assertContains(response, '<td class="field-hostname">laptop</td>')
+            self.assertContains(
+                response, '<td class="field-ip_address">192.168.1.10</td>'
+            )
+
+        with self.subTest("Search by hostname and IP address"):
+            for query in ("laptop", "192.168.1.10"):
+                response = self.client.get(url, {"q": query})
+                self.assertContains(response, "22:33:44:55:66:77")
+                self.assertNotContains(response, "22:33:44:55:66:88")
+
+        with self.subTest("Device admin inline"):
+            response = self.client.get(
+                reverse(
+                    f"admin:{self.config_app_label}_device_change", args=[device.id]
+                )
+            )
+            self.assertContains(response, "laptop")
+            self.assertContains(response, "192.168.1.20")
+
 
 class TestMapPageAdmin(TestGeoMixin, DeviceMonitoringTestCase):
     location_model = Location

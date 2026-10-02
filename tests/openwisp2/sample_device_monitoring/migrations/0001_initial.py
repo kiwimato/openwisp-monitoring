@@ -200,6 +200,25 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "hostname",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="as reported by the DHCP leases of the device",
+                        max_length=255,
+                        verbose_name="hostname",
+                    ),
+                ),
+                (
+                    "ip_address",
+                    models.GenericIPAddressField(
+                        blank=True,
+                        help_text="as reported by the DHCP leases of the device",
+                        null=True,
+                        verbose_name="IP address",
+                    ),
+                ),
+                (
                     "details",
                     models.CharField(default="devicemonitoring", max_length=64),
                 ),

@@ -512,6 +512,8 @@ class WiFiSessionInline(WifiSessionAdminHelperMixin, admin.TabularInline):
     fk_name = "device"
     fields = [
         "get_mac_address",
+        "hostname",
+        "ip_address",
         "vendor",
         "ssid",
         "interface_name",
@@ -566,6 +568,8 @@ class WifiSessionAdmin(
     model = WifiSession
     list_display = [
         "mac_address",
+        "hostname",
+        "ip_address",
         "vendor",
         "related_organization",
         "related_device",
@@ -579,6 +583,8 @@ class WifiSessionAdmin(
     fields = [
         "related_organization",
         "mac_address",
+        "hostname",
+        "ip_address",
         "vendor",
         "related_device",
         "ssid",
@@ -593,7 +599,13 @@ class WifiSessionAdmin(
         "get_stop_time",
         "modified",
     ]
-    search_fields = ["wifi_client__mac_address", "device__name", "device__mac_address"]
+    search_fields = [
+        "wifi_client__mac_address",
+        "hostname",
+        "ip_address",
+        "device__name",
+        "device__mac_address",
+    ]
     list_filter = [
         DeviceOrganizationFilter,
         DeviceFilter,

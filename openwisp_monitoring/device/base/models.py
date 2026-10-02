@@ -281,12 +281,32 @@ class AbstractDeviceData(object):
     def json(self, *args, **kwargs):
         return json.dumps(self.data, *args, **kwargs)
 
+    def _get_dhcp_lease_map(self):
+        """
+        Maps client MAC addresses to the hostname and IP address found in
+        the DHCP leases sent by the device, preferring IPv4 addresses.
+        """
+        leases = {}
+        for lease in self.data.get("dhcp_leases", []):
+            entry = leases.setdefault(
+                lease["mac"].lower(), {"hostname": "", "ip_address": None}
+            )
+            # "*" is how dnsmasq reports a client which did not send a hostname
+            if lease["client_name"] != "*" and not entry["hostname"]:
+                entry["hostname"] = lease["client_name"][:255]
+            ip = lease["ip"]
+            current = entry["ip_address"]
+            if ip != "0.0.0.0" and (not current or (":" in current and ":" not in ip)):
+                entry["ip_address"] = ip
+        return leases
+
     def save_wifi_clients_and_sessions(self):
         _WIFICLIENT_FIELDS = ["vendor", "ht", "vht", "he", "wmm", "wds", "wps"]
         WifiClient = load_model("device_monitoring", "WifiClient")
         WifiSession = load_model("device_monitoring", "WifiSession")
 
         active_sessions = []
+        leases = self._get_dhcp_lease_map()
         interfaces = self.data.get("interfaces", [])
         for interface in interfaces:
             if interface.get("type") != "wireless":
@@ -310,13 +330,23 @@ class AbstractDeviceData(object):
                     client_obj.save(update_fields=update_fields)
 
                 # Save WifiSession
+                lease = leases.get(client_obj.mac_address.lower(), {})
                 session_obj, _ = WifiSession.objects.get_or_create(
                     device_id=self.id,
                     interface_name=interface_name,
                     ssid=ssid,
                     wifi_client=client_obj,
                     stop_time=None,
+                    defaults=lease,
                 )
+                # hostname and IP may be learned or change during the session
+                lease_update = {
+                    key: value
+                    for key, value in lease.items()
+                    if value and getattr(session_obj, key) != value
+                }
+                if lease_update:
+                    WifiSession.objects.filter(pk=session_obj.pk).update(**lease_update)
                 active_sessions.append(session_obj.pk)
 
         # Close open WifiSession
@@ -597,6 +627,19 @@ class AbstractWifiSession(TimeStampedEditableModel):
         db_index=True,
         null=True,
         blank=True,
+    )
+    hostname = models.CharField(
+        verbose_name=_("hostname"),
+        max_length=255,
+        blank=True,
+        default="",
+        help_text=_("as reported by the DHCP leases of the device"),
+    )
+    ip_address = models.GenericIPAddressField(
+        verbose_name=_("IP address"),
+        blank=True,
+        null=True,
+        help_text=_("as reported by the DHCP leases of the device"),
     )
 
     class Meta:
